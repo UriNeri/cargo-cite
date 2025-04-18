@@ -101,14 +101,30 @@ $ cargo cite --help
 Usage: cargo cite [OPTIONS]
 
 Optional arguments:
-  -h, --help           print help message
-  -g, --generate       Generate CITATION.bib file
-  -o, --overwrite     Over-write existing CITATION.bib file
-  -r, --readme-append Append a "Citing" section to the README
-  -p, --path PATH     Path to the crate. If not specified, will use current directory and recursively search all subdirectories for Cargo.toml files
-  -f, --filename NAME Citation file to add (default: CITATION.bib, use "STDOUT" for standard output)
-  -d, --dependencies  Generate BibTeX entries for all explicit dependencies
-  --max-depth N       Maximum depth for recursive search (default: unlimited). 0 means only current directory, -1 means unlimited depth
+  -h, --help            print help message
+  -g, --generate        Generate CITATION.bib file
+  -o, --overwrite      Over-write existing CITATION.bib file
+  -r, --readme-append  Append a "Citing" section to the README
+  -p, --path PATH      Path to the crate. If not specified, will use current directory and recursively search all subdirectories for Cargo.toml files
+  -f, --filename NAME  Citation file to add (default: CITATION.bib, use "STDOUT" for standard output)
+  -d, --dependencies   Generate BibTeX entries for all explicit dependencies
+  -m, --max-depth N    Maximum depth for recursive search (default: unlimited). 0 means only current directory, -1 means unlimited depth
+```
+
+### Quick Examples
+
+```shell
+# Generate citation for current project
+$ cargo cite -g
+
+# Generate citations for dependencies and output to stdout
+$ cargo cite -d -f STDOUT
+
+# Search recursively up to 2 levels deep and overwrite existing files
+$ cargo cite -m 2 -o
+
+# Generate citations and append to README
+$ cargo cite -g -r
 ```
 
 ## Example Citations

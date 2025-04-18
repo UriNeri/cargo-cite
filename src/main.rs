@@ -43,28 +43,28 @@ struct CitationOption {
     #[options(free)]
     free: Vec<String>,
 
-    #[options(help = "print help message")]
+    #[options(help = "print help message", short = "h")]
     help: bool,
 
-    #[options(help = "Generate CITATION.bib file")]
+    #[options(help = "Generate CITATION.bib file", short = "g")]
     generate: bool,
 
-    #[options(help = "Over-write existing CITATION.bib file")]
+    #[options(help = "Over-write existing CITATION.bib file", short = "o")]
     overwrite: bool,
 
-    #[options(help = "Append a \"Citing\" section to the README")]
+    #[options(help = "Append a \"Citing\" section to the README", short = "r")]
     readme_append: bool,
 
-    #[options(help = "Path to the crate, default to current directory")]
+    #[options(help = "Path to the crate, default to current directory. If not specified, will use current directory and recursively search all subdirectories for Cargo.toml files", short = "p")]
     path: Option<String>,
 
-    #[options(help = "Citation file to add, default to CITATION.bib (recommended). \"STDOUT\" for outputing to standard output.")]
+    #[options(help = "Citation file to add, default to CITATION.bib (recommended). \"STDOUT\" for outputing to standard output.", short = "f")]
     filename: Option<String>,
 
-    #[options(help = "Generate BibTeX entries for all explicit dependencies")]
+    #[options(help = "Generate BibTeX entries for all explicit dependencies", short = "d")]
     dependencies: bool,
 
-    #[options(help = "Maximum depth for recursive search (default: unlimited). 0 means only current directory, -1 means unlimited depth.")]
+    #[options(help = "Maximum depth for recursive search (default: unlimited). 0 means only current directory, -1 means unlimited depth.", short = "m")]
     max_depth: Option<i32>,
 }
 
