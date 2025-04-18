@@ -1,13 +1,22 @@
 # cargo-cite
 ## A cargo extension to produce a citable BibTeX from crates
 
+> This is a fork of [matbesancon/cargo-cite](https://github.com/matbesancon/cargo-cite) that adds the ability to generate citations for a project's dependencies.
+
 [![Build Status](https://travis-ci.org/matbesancon/cargo-cite.svg?branch=master)](https://travis-ci.org/matbesancon/cargo-cite)
 
 ## Installation
 
-`cargo-cite` is not registered so you will need the following steps:
+You can install this fork with dependency citation support:
 ```shell
-git clone git@github.com:matbesancon/cargo-cite.git
+git clone https://github.com/UriNeri/cargo-cite.git
+cd cargo-cite
+cargo install --path .
+```
+
+Or the original version:
+```shell
+git clone https://github.com/matbesancon/cargo-cite.git
 cd cargo-cite
 cargo install --path .
 ```
@@ -29,18 +38,21 @@ software, as you can see in the Julia [repo](https://github.com/JuliaLang/julia/
 
 ## How does cargo-cite help
 
-`cargo-cite` is an experimental Rust crate to generate a
-`CITATION.bib` file for a Rust project based on its Cargo.toml file.
-It can be yours or someone else's. Once the `CITATION.bib` file is created,
-feel free to add other entries to it - for example, a software paper
-published in the [Journal of Open-Source Software](http://joss.theoj.org).
+`cargo-cite` is an experimental Rust crate that provides two main citation functionalities:
+
+1. Generate a `CITATION.bib` file for your Rust project based on its Cargo.toml file
+2. Generate citations for all dependencies in your project
+
+Once the citation files are created, feel free to add other entries to them - for example, a software paper published in the [Journal of Open-Source Software](http://joss.theoj.org).
 
 ## Usage
+
+### Citing Your Project
 
 Say you are using [ndarray](https://github.com/rust-ndarray/ndarray.git)
 for your work, but they have not published a CITATION.bib yet:
 
-```
+```shell
 $ git clone https://github.com/rust-ndarray/ndarray.git
 $ cd ndarray
 $ cargo cite
@@ -49,10 +61,79 @@ $ cargo cite
 A `CITATION.bib` file has been created. To add the reference to this file
 in the README, run:
 
-```
-$ cargo cite -r
+```shell
+$ cargo cite --readme-append
 ```
 
-## Available options
+### Citing Dependencies
 
-See `cargo cite --help` for options.
+To generate citations for all dependencies in your project:
+
+```shell
+# Create a DEPENDENCIES.bib file
+$ cargo cite --dependencies
+
+# Output to a custom file
+$ cargo cite --dependencies --filename my-deps.bib
+
+# Print to stdout
+$ cargo cite --dependencies --filename STDOUT
+
+# Overwrite existing file
+$ cargo cite --dependencies --overwrite
+```
+
+The generated citations include:
+- Package metadata (description, authors) from crates.io
+- Repository URLs
+- Version information
+- Links to crate documentation
+
+Special handling is provided for:
+- Local path dependencies
+- Git dependencies
+- Regular crates.io dependencies
+
+## Available Options
+
+```shell
+$ cargo cite --help
+Usage: cargo cite [OPTIONS]
+
+Optional arguments:
+  -h, --help           print help message
+  -g, --generate       Generate CITATION.bib file
+  -o, --overwrite     Over-write existing CITATION.bib file
+  -r, --readme-append Append a "Citing" section to the README
+  -p, --path PATH     Path to the crate. If not specified, will use current directory and recursively search all subdirectories for Cargo.toml files
+  -f, --filename NAME Citation file to add (default: CITATION.bib, use "STDOUT" for standard output)
+  -d, --dependencies  Generate BibTeX entries for all explicit dependencies
+```
+
+## Example Citations
+
+For a crates.io dependency:
+```bibtex
+@misc{rust-serde,
+    title={serde},
+    note = {A generic serialization/deserialization framework},
+    author = {David Tolnay and Erick Tryzelaar},
+    url = {https://github.com/serde-rs/serde},
+    version = {1.0},
+    year = 2024,
+    month = 3,
+    howpublished = {https://crates.io/crates/serde},
+}
+```
+
+For a git dependency:
+```bibtex
+@misc{rust-mycrate,
+    title={mycrate},
+    url = {https://github.com/user/mycrate.git},
+    note = {Git dependency},
+    version = {0.1.0},
+    year = 2024,
+    month = 3,
+}
+```

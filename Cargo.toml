@@ -1,15 +1,18 @@
 [package]
 name = "cargo-cite"
 version = "0.1.0"
-authors = ["Mathieu Besançon <mathieu.besancon@gmail.com>"]
-edition = "2018"
+authors = ["Mathieu Besançon <mathieu.besancon@gmail.com>", "Uri Neri <uri.neri@gmail.com>"]
+edition = "2021"
 description = "A cargo extension to produce a citable BibTeX from crates"
+
 [[bin]]
 name = "cargo-cite"
 
 [dependencies]
-toml = "0.5"
-term = "0.5"
-gumdrop = "0.5"
+toml = "0.8"
+gumdrop = "0.8"
 chrono = "0.4"
 serde = { version = "1.0", features = ["derive"] }
+reqwest = { version = "0.11", features = ["json"] }
+tokio = { version = "1.0", features = ["full"] }
+walkdir = "2.4"
