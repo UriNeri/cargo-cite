@@ -3,7 +3,7 @@
 
 > This is a fork of [matbesancon/cargo-cite](https://github.com/matbesancon/cargo-cite) that adds the ability to generate citations for a project's dependencies.
 
-[![Build Status](https://travis-ci.org/matbesancon/cargo-cite.svg?branch=master)](https://travis-ci.org/matbesancon/cargo-cite)
+[![CI Status](https://github.com/UriNeri/cargo-cite/actions/workflows/ci.yml/badge.svg)](https://github.com/UriNeri/cargo-cite/actions)
 
 ## Installation
 
@@ -108,6 +108,7 @@ Optional arguments:
   -p, --path PATH     Path to the crate. If not specified, will use current directory and recursively search all subdirectories for Cargo.toml files
   -f, --filename NAME Citation file to add (default: CITATION.bib, use "STDOUT" for standard output)
   -d, --dependencies  Generate BibTeX entries for all explicit dependencies
+  --max-depth N       Maximum depth for recursive search (default: unlimited). 0 means only current directory, -1 means unlimited depth
 ```
 
 ## Example Citations
