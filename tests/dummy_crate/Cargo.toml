@@ -1,0 +1,10 @@
+[package]
+name = "dummy-crate"
+version = "0.1.0"
+authors = ["Test Author <test@example.com>"]
+edition = "2021"
+description = "A dummy crate for testing cargo-cite"
+
+[dependencies]
+serde = "1.0"
+tokio = "1.0"

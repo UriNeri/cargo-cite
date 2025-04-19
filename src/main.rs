@@ -245,7 +245,7 @@ fn find_cargo_files(start_dir: &Path, max_depth: Option<i32>) -> Vec<PathBuf> {
         .collect()
 }
 
-async fn process_cargo_file(cargo_path: &Path, opt: &CitationOption) -> Result<(), Box<dyn std::error::Error>> {
+async fn process_cargo_file(cargo_path: &Path, opt: &CitationOption) -> Result<(bool, String), Box<dyn std::error::Error>> {
     println!("\nProcessing {:?}", cargo_path);
     
     let mut cargo_file = match fs::File::open(cargo_path) {
@@ -253,7 +253,7 @@ async fn process_cargo_file(cargo_path: &Path, opt: &CitationOption) -> Result<(
         Err(e) => {
             println!("Warning: Could not open {:?}: {}", cargo_path, e);
             println!("         Skipping this file.");
-            return Ok(());
+            return Ok((false, String::new()));
         }
     };
 
@@ -261,7 +261,7 @@ async fn process_cargo_file(cargo_path: &Path, opt: &CitationOption) -> Result<(
     if let Err(e) = cargo_file.read_to_string(&mut cargo_content) {
         println!("Warning: Could not read {:?}: {}", cargo_path, e);
         println!("         Skipping this file.");
-        return Ok(());
+        return Ok((false, String::new()));
     }
 
     let manifest: ManifestInfo = match toml::from_str(&cargo_content) {
@@ -270,32 +270,13 @@ async fn process_cargo_file(cargo_path: &Path, opt: &CitationOption) -> Result<(
             println!("Warning: Invalid Cargo.toml at {:?}:", cargo_path);
             println!("         {}", e);
             println!("         Skipping this file.");
-            return Ok(());
+            return Ok((false, String::new()));
         }
     };
     
     if opt.dependencies {
         let deps_bibtex = manifest.build_dependencies_bibtex().await;
-        let output_file = if let Some(o) = &opt.filename {
-            o.clone()
-        } else {
-            String::from("DEPENDENCIES.bib")
-        };
-
-        if output_file == "STDOUT" {
-            print!("{}", deps_bibtex);
-            return Ok(());
-        }
-
-        let file_path = cargo_path.parent().unwrap().join(PathBuf::from(&output_file));
-        if file_path.exists() && !opt.overwrite {
-            println!("Note: Dependencies citation file already exists at {:?}.", &file_path);
-            println!("      Use --overwrite to replace it.");
-            return Ok(());
-        }
-        fs::write(&file_path, deps_bibtex.as_bytes())?;
-        println!("Created dependencies citation file at {:?}", file_path);
-        return Ok(());
+        return Ok((true, deps_bibtex));
     }
 
     if opt.readme_append {
@@ -322,16 +303,16 @@ async fn process_cargo_file(cargo_path: &Path, opt: &CitationOption) -> Result<(
     if file_path.exists() && !opt.overwrite {
         println!("Note: Citation file already exists at {:?}.", &file_path);
         println!("      Use --overwrite to replace it.");
-        return Ok(());
+        return Ok((false, String::new()));
     }
     
     fs::write(&file_path, r.as_bytes())?;
     println!("Created citation file at {:?}", file_path);
-    Ok(())
+    Ok((true, String::new()))
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let opt = CitationOption::parse_args_default_or_exit();
 
     let start_dir = if let Some(ref s) = opt.path {
@@ -341,7 +322,7 @@ async fn main() {
             Ok(dir) => dir,
             Err(e) => {
                 println!("Error: Could not access current directory: {}", e);
-                return;
+                return Ok(());
             }
         }
     };
@@ -349,20 +330,31 @@ async fn main() {
     // Check if the start directory exists
     if !start_dir.exists() {
         println!("Error: Directory {:?} does not exist.", start_dir);
-        return;
+        return Ok(());
     }
 
-    println!("Searching for Cargo.toml files in {:?}{}", 
-        start_dir,
-        match opt.max_depth {
-            Some(depth) if depth < 0 => String::from(" and all subdirectories"),
-            Some(0) => String::from(" (current directory only)"),
-            Some(depth) => format!(" (max depth: {})", depth),
-            None => String::from(" (searching all subdirectories)"),
+    let cargo_files = if opt.dependencies {
+        // Only do directory walking for dependencies option
+        println!("Searching for Cargo.toml files in {:?}{}", 
+            start_dir,
+            match opt.max_depth {
+                Some(depth) if depth < 0 => String::from(" and all subdirectories"),
+                Some(0) => String::from(" (current directory only)"),
+                Some(depth) => format!(" (max depth: {})", depth),
+                None => String::from(" (searching all subdirectories)"),
+            }
+        );
+        find_cargo_files(&start_dir, opt.max_depth)
+    } else {
+        // For other operations, just look in the current directory
+        let cargo_path = start_dir.join(CARGO_FILE);
+        if cargo_path.exists() {
+            vec![cargo_path]
+        } else {
+            println!("Error: No Cargo.toml found in {:?}.", start_dir);
+            return Ok(());
         }
-    );
-
-    let cargo_files = find_cargo_files(&start_dir, opt.max_depth);
+    };
     
     if cargo_files.is_empty() {
         if opt.max_depth == Some(0) {
@@ -383,7 +375,7 @@ async fn main() {
                 }
             );
         }
-        return;
+        return Ok(());
     }
 
     println!("\nFound {} Cargo.toml file{}", 
@@ -393,13 +385,46 @@ async fn main() {
 
     let mut processed = 0;
     let mut skipped = 0;
+    let mut all_dependencies = String::new();
+
     for cargo_path in cargo_files {
         match process_cargo_file(&cargo_path, &opt).await {
-            Ok(_) => processed += 1,
+            Ok((success, deps_bibtex)) => {
+                if success {
+                    processed += 1;
+                    if opt.dependencies {
+                        all_dependencies.push_str(&deps_bibtex);
+                    }
+                } else {
+                    skipped += 1;
+                }
+            }
             Err(e) => {
                 println!("Warning: Error processing {:?}: {}", cargo_path, e);
                 println!("         Skipping this file.");
                 skipped += 1;
+            }
+        }
+    }
+
+    // Write combined dependencies to a single file
+    if opt.dependencies && !all_dependencies.is_empty() {
+        let output_file = if let Some(o) = &opt.filename {
+            o.clone()
+        } else {
+            String::from("DEPENDENCIES.bib")
+        };
+
+        if output_file == "STDOUT" {
+            print!("{}", all_dependencies);
+        } else {
+            let file_path = start_dir.join(&output_file);
+            if file_path.exists() && !opt.overwrite {
+                println!("Note: Dependencies citation file already exists at {:?}.", &file_path);
+                println!("      Use --overwrite to replace it.");
+            } else {
+                fs::write(&file_path, all_dependencies.as_bytes())?;
+                println!("Created combined dependencies citation file at {:?}", file_path);
             }
         }
     }
@@ -419,4 +444,5 @@ async fn main() {
             );
         }
     }
+    Ok(())
 }
